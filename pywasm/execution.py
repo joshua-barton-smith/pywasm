@@ -409,7 +409,8 @@ def hostfunc_call(
     valn = [stack.pop() for _ in f.functype.args][::-1]
     ctx = Ctx(store.mems)
     r = f.hostcode(ctx, *[e.n for e in valn])
-    return [Value(f.functype.rets[0], r)]
+    if r:
+        stack.add(Value(f.functype.rets[0], r))
 
 
 def wasmfunc_call(
@@ -581,8 +582,7 @@ def exec_expr(
                 stack.ext(v)
                 break
             if opcode == convention.call:
-                r = call(module, module.funcaddrs[i.immediate_arguments], store, stack)
-                stack.ext(r)
+                call(module, module.funcaddrs[i.immediate_arguments], store, stack)
                 continue
             if opcode == convention.call_indirect:
                 if i.immediate_arguments[1] != 0x00:
@@ -591,8 +591,7 @@ def exec_expr(
                 tab = store.tables[module.tableaddrs[0]]
                 if not 0 <= idx < len(tab.elem):
                     raise Exception('pywasm: undefined element index')
-                r = call(module, tab.elem[idx], store, stack)
-                stack.ext(r)
+                call(module, tab.elem[idx], store, stack)
                 continue
             continue
         if opcode == convention.drop:
